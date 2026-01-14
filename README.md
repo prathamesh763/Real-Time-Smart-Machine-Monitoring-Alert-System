@@ -20,6 +20,9 @@ Node-RED • MQTT (Mosquitto) • InfluxDB • Grafana • Docker
 ```bash
 docker-compose up -d
 
+
+✅ Now **paste this below it**:
+
 ```md
 ## URLs
 - Node-RED: http://localhost:1880  
