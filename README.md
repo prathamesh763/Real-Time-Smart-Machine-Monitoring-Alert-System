@@ -21,9 +21,6 @@ Node-RED • MQTT (Mosquitto) • InfluxDB • Grafana • Docker
 docker-compose up -d
 
 
-✅ Now **paste this below it**:
-
-```md
 ## URLs
 - Node-RED: http://localhost:1880  
 - Grafana: http://localhost:3000 *(default: admin/admin)*  
