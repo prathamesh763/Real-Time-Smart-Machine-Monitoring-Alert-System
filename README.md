@@ -1,3 +1,6 @@
+
+
+```md
 # Real-Time Smart Machine Monitoring & Alert System (IoT + Analytics POC)
 
 A Dockerized Industrial IoT proof-of-concept that simulates machine sensor readings (temperature & vibration), streams them via MQTT, stores time-series data in InfluxDB, and visualizes real-time analytics using Grafana dashboards with anomaly alerts.
@@ -20,6 +23,7 @@ Node-RED • MQTT (Mosquitto) • InfluxDB • Grafana • Docker
 ```bash
 docker-compose up -d
 
+```md
 
 ## URLs
 - Node-RED: http://localhost:1880  
