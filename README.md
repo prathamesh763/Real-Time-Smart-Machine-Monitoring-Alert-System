@@ -1,4 +1,4 @@
-# Smart Machine Monitoring System (IoT + Analytics POC)
+# Real-Time Smart Machine Monitoring & Alert System (IoT + Analytics POC)
 
 A Dockerized Industrial IoT proof-of-concept that simulates machine sensor readings (temperature & vibration), streams them via MQTT, stores time-series data in InfluxDB, and visualizes real-time analytics using Grafana dashboards with anomaly alerts.
 
