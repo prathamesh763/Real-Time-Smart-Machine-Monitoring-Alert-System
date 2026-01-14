@@ -1,0 +1,225 @@
+[
+  {
+    "id": "a1f1b8d2b0a1d2a1",
+    "type": "tab",
+    "label": "Smart Machine Simulator with Alerts (iot_data)",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "inject1",
+    "type": "inject",
+    "z": "a1f1b8d2b0a1d2a1",
+    "name": "Trigger Every 5s",
+    "props": [],
+    "repeat": "5",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "1",
+    "topic": "",
+    "x": 150,
+    "y": 100,
+    "wires": [
+      [
+        "genData"
+      ]
+    ]
+  },
+  {
+    "id": "genData",
+    "type": "function",
+    "z": "a1f1b8d2b0a1d2a1",
+    "name": "Generate Simulated Machine Data (3 machines)",
+    "func": "// Simulate 3 machines\nlet machines = [\"M1\",\"M2\",\"M3\"];\nlet out = [];\nmachines.forEach(m=>{\n    let temp = (Math.random()*20 + 40).toFixed(2); // 40-60\u00b0C\n    let vib  = (Math.random()*6 + 1).toFixed(2);   // 1-7 units\n    out.push({\n        machine_id: m,\n        site: \"Plant_A\",\n        timestamp: new Date().toISOString(),\n        temperature: Number(temp),\n        vibration: Number(vib)\n    });\n});\nmsg.payload = out;\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 100,
+    "wires": [
+      [
+        "split1"
+      ]
+    ]
+  },
+  {
+    "id": "split1",
+    "type": "split",
+    "z": "a1f1b8d2b0a1d2a1",
+    "name": "Split per machine",
+    "splt": "array",
+    "spltType": "str",
+    "arraySplt": 1,
+    "arraySpltType": "len",
+    "stream": false,
+    "addname": "",
+    "property": "payload",
+    "x": 670,
+    "y": 100,
+    "wires": [
+      [
+        "mqttOut1"
+      ]
+    ]
+  },
+  {
+    "id": "mqttOut1",
+    "type": "mqtt out",
+    "z": "a1f1b8d2b0a1d2a1",
+    "name": "Publish to MQTT",
+    "topic": "factory/machine/data",
+    "qos": "0",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "mqtt_broker",
+    "x": 920,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "mqttIn1",
+    "type": "mqtt in",
+    "z": "a1f1b8d2b0a1d2a1",
+    "name": "Subscribe machine data",
+    "topic": "factory/machine/data",
+    "qos": "0",
+    "datatype": "json",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": false,
+    "rh": 0,
+    "inputs": 0,
+    "x": 180,
+    "y": 240,
+    "wires": [
+      [
+        "clean1"
+      ]
+    ]
+  },
+  {
+    "id": "clean1",
+    "type": "function",
+    "z": "a1f1b8d2b0a1d2a1",
+    "name": "Clean + Status + Split Alerts",
+    "func": "let d = msg.payload;\n\n// Convert numbers safely\nd.temperature = Number(d.temperature);\nd.vibration = Number(d.vibration);\n\n// Remove custom timestamp (Influx will use current time)\ndelete d.timestamp;\ndelete d.time;\n\n// Threshold logic\nlet isAlert = (d.temperature > 60 || d.vibration > 6);\nd.status = isAlert ? \"ALERT\" : \"OK\";\n\n// Normal metric output (always)\nlet metricMsg = {\n  payload: {\n    machine_id: d.machine_id,\n    site: d.site,\n    temperature: d.temperature,\n    vibration: d.vibration,\n    status: d.status\n  }\n};\n\n// Alert output (only when alert)\nlet alertMsg = null;\nif (isAlert) {\n  alertMsg = {\n    payload: {\n      machine_id: d.machine_id,\n      site: d.site,\n      issue: (d.temperature > 60 ? \"High Temperature\" : \"High Vibration\"),\n      temperature: d.temperature,\n      vibration: d.vibration,\n      status: \"ALERT\"\n    }\n  };\n}\n\nreturn [metricMsg, alertMsg];",
+    "outputs": 2,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 450,
+    "y": 240,
+    "wires": [
+      [
+        "influxMetrics",
+        "debugMetrics"
+      ],
+      [
+        "influxAlerts",
+        "debugAlerts"
+      ]
+    ]
+  },
+  {
+    "id": "influxMetrics",
+    "type": "influxdb out",
+    "z": "a1f1b8d2b0a1d2a1",
+    "influxdb": "influx_conf",
+    "name": "Write machine_metrics (iot_data)",
+    "measurement": "machine_metrics",
+    "precision": "",
+    "retentionPolicy": "",
+    "database": "iot_data",
+    "retentionPolicyV18Flux": "",
+    "org": "",
+    "bucket": "",
+    "x": 760,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "influxAlerts",
+    "type": "influxdb out",
+    "z": "a1f1b8d2b0a1d2a1",
+    "influxdb": "influx_conf",
+    "name": "Write machine_alerts (iot_data)",
+    "measurement": "machine_alerts",
+    "precision": "",
+    "retentionPolicy": "",
+    "database": "iot_data",
+    "retentionPolicyV18Flux": "",
+    "org": "",
+    "bucket": "",
+    "x": 760,
+    "y": 270,
+    "wires": []
+  },
+  {
+    "id": "debugMetrics",
+    "type": "debug",
+    "z": "a1f1b8d2b0a1d2a1",
+    "name": "Metrics Data",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 980,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "debugAlerts",
+    "type": "debug",
+    "z": "a1f1b8d2b0a1d2a1",
+    "name": "Alert Data",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 980,
+    "y": 270,
+    "wires": []
+  },
+  {
+    "id": "mqtt_broker",
+    "type": "mqtt-broker",
+    "name": "mosquitto-broker",
+    "broker": "mosquitto",
+    "port": "1883",
+    "clientid": "node-red-sim",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": 4,
+    "keepalive": "60",
+    "cleansession": true,
+    "autoUnsubscribe": true
+  },
+  {
+    "id": "influx_conf",
+    "type": "influxdb",
+    "hostname": "influxdb",
+    "port": "8086",
+    "protocol": "http",
+    "database": "iot_data",
+    "name": "influxdb-local",
+    "usetls": false,
+    "tls": "",
+    "influxdbVersion": "1.x",
+    "url": "",
+    "timeout": "",
+    "rejectUnauthorized": false
+  }
+]
